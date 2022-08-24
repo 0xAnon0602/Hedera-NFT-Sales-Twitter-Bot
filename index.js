@@ -406,14 +406,23 @@ async function main(){
                         }
         
                         var nftName = response['name']
-        
+             
+                        while(true){
+                        try{
+
                         var priceData = await CoinGeckoClient.simple.price({
                             ids: ['hedera-hashgraph'],
                             vs_currencies: ['usd'],
                         }); 
                         
                         var coinPrice = (priceData['data']['hedera-hashgraph']['usd']*value).toFixed(2)
+                        break
 
+                        }catch(e){
+                            console.log(e)
+                            console.log(`Retrying Coingecko API`)                        
+                            }
+                        }   
 
                         while(true){
                             try{
