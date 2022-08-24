@@ -2,6 +2,9 @@
 
 This Twitter bot sends message on sales of NFTs on the Hedera ecosytyem
 
+![image](https://user-images.githubusercontent.com/71931823/186366596-a29dccb6-9094-410f-a21c-8d79b5681227.png)
+
+
 ### Requirements 
 You need elevated access Twitter developer account <br>
 You can apply that from [here](https://developer.twitter.com/en)
