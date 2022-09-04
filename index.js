@@ -73,7 +73,7 @@ async function tweet(nftName,nftSerial,value,coinPrice,marketplace,collectionURL
         T.post('media/metadata/create', meta_params, function (err, data, response) {
           if (!err) {
 
-            var params = { status: `${nftName} #${nftSerial} bought for ${value}ℏ ($${coinPrice}) on ${marketplace}\n${collectionURL}\n#HBAR #HBARNFT #HBARbarians #Hedera`,
+            var params = { status: `${nftName} #${nftSerial} bought for ${value}ℏ ($${coinPrice}) on ${marketplace}\n${collectionURL}`,
                             media_ids: [mediaIdStr] }
        
             T.post('statuses/update', params, function (err, data, response) {
