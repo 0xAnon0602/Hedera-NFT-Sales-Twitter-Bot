@@ -10,6 +10,7 @@ const CoinGecko = require('coingecko-api');
 const CoinGeckoClient = new CoinGecko();
 
 var mainZuseAccount = `0.0.703235`
+var mainSentientAccount = `0.0.1223480`
 
 
 let rawdata = fs.readFileSync('tokenID.json');
