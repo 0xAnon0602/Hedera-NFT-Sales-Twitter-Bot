@@ -294,160 +294,71 @@ async function main(){
         try{
     
     // To get new transactions in interval of 1 second
-    
-    var url=`https://mainnet-public.mirrornode.hedera.com/api/v1/transactions?account.id=${mainSentientAccount}&limit=100&order=desc&timestamp=gt%3A${timeStampSentient}&transactiontype=cryptotransfer&result=success`
+    var url=`https://hederasentientbackend.azurewebsites.net/getactivityMarketplace`
     
     
     var opts = {
+        method: "POST",
         headers:{
             'accept': 'application/json'
-        }
+        },       
+        body: JSON.stringify({
+            "f": null,
+            "a": null,
+            "page": 1,
+            "amount": 25,
+            "activityFilter": "Sales"
+        })
     }
     
     var response = await web_call(url,opts)
     
     
-    var transactions = (response['transactions'])
+    var transactions = (response['response'])
+    let reversedTransactions = transactions.map((e, i, a)=> a[(a.length -1) -i])
     
+    for(var tx of reversedTransactions){
     
-    for(var tx of transactions){
+            var saleTypeId = tx['saleTypeId']
+            var txTimestampTemp = new Date(tx['saleDate'])
+            var txTimestamp = parseInt(txTimestampTemp.getTime()/1000);
     
-        var txID = tx['transaction_id']
+            if(txTimestamp>=timeStampSentient && saleTypeId==1){
     
-        while(true){
-            try{
+            var nftTokenId = tx['tokenAddress']
+            var nftSerial = tx['serialId'] 
+            var buyer = tx['buyerAddress']
+            var seller = tx['sellerAddress']
+            var nftName = tx['name']
+            var nftImage=tx['imageParsed']
+            var value = Math.abs(parseInt(tx['salePrice']))
+            var txID = tx['saleTransactionId']
     
-        // To get each transactions info
+            while(true){
+                try{
+                    
     
-        var url=`https://mainnet-public.mirrornode.hedera.com/api/v1/transactions/${txID}?nonce=0`
+                    await downloadFile(nftImage,'NftFile.jpg')
     
-        var opts = {
-            headers:{
-                'accept': 'application/json'
-            }
-        }
-        
-        var response = await web_call(url,opts)
-        break
+                    var imageSize = parseInt(((await fs.statSync('NftFile.jpg')).size)/1024)
     
-            }catch(e){console.log(e)
-            console.log(`Retrying API request (2)`)
-            }
-        }
-        
-        var memo64 = response['transactions'][0]['memo_base64']
-        var isMint = (atob(memo64)).includes("Mint")
+                    var NftFile = 'NftFile.jpg'
     
-        if(!isMint){
+                    if(imageSize>2000){
+                    await fs.renameSync('NftFile.jpg', 'NftFile.mp4')
+                    NftFile = 'NftFile.mp4'
+                    }
     
-        var mainTx = (response['transactions'][0]['nft_transfers'])
-        var mainTransfers = (response['transactions'][0]['transfers'])
+                    break
     
-        for (nftTx of mainTx){
-            var nftTokenId = nftTx['token_id']
-            var nftSerial = nftTx['serial_number'] 
-            var buyer = nftTx['receiver_account_id']
-            var seller = nftTx['sender_account_id']
-        }
-    
-        for(transfers of mainTransfers){
-            if (transfers['account']==buyer){
-                var value = Math.abs(parseInt(transfers['amount']))/10**8
-            }
-        }
-    
-    
-        while(true){
-            try{
-    
-        // To get NFT NAME from TOKEN ID 
-    
-        var url=`https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${nftTokenId}`
-    
-        var opts = {
-            headers:{
-                'accept': 'application/json'
-            }
-        }
-        
-        var response = await web_call(url,opts)
-        break
-    
-            }catch(e){console.log(e)
-            console.log(`Retrying API request (3)`)
-            }
-        }
-    
-        var nftName = response['name']
-    
-        // TO GET NFT IMAGE 
-    
-        var sentientImgName=(nftName.toLocaleLowerCase()).replaceAll(' ','-')
-    
-        var url=`https://hederasentientbackend.azurewebsites.net/nftexplorer-nft`
-    
-        var opts = {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                "friendlyurl": sentientImgName,
-                "serialId": nftSerial,
-                "ismarket": false
-            })
-        }
-        
-        
-        var response = await web_call(url,opts)
-    
-        var nftImage = response['response']['imageCDNURL']
-    
-        // TO GET HBAR PRICE
-    
-        // while(true){
-        //     try{
-    
-        // var priceData = await CoinGeckoClient.simple.price({
-        //     ids: ['hedera-hashgraph'],
-        //     vs_currencies: ['usd'],
-        // }); 
-        
-        // var coinPrice = (priceData['data']['hedera-hashgraph']['usd']*value).toFixed(2)
-        // break
-    
-        //     }catch(e){
-        //         console.log(e)
-        //         console.log(`Retrying Coingecko API`)
-        //     }
-        // }
-    
-    
-        while(true){
-            try{
-                
-
-                await downloadFile(nftImage,'NftFile.jpg')
-
-                var imageSize = parseInt(((await fs.statSync('NftFile.jpg')).size)/1024)
-
-                var NftFile = 'NftFile.jpg'
-
-                if(imageSize>2000){
-                await fs.renameSync('NftFile.jpg', 'NftFile.mp4')
-                NftFile = 'NftFile.mp4'
+                }catch(e){
+                    console.log(e)
                 }
-
-                break
-
-            }catch(e){
-                console.log(e)
             }
-        }
+    
 
-    
-    
         if(tokenID.includes(nftTokenId)){
+    
 
         console.log(
         ` 
@@ -462,17 +373,18 @@ async function main(){
         `)
         
 
-
-        await tweet(nftName,nftSerial,value,`Hedera Sentient Marketplace`,`https://hederasentient.com/nft-explorer/${sentientImgName}`,NftFile)
+        await tweet(nftName,nftSerial,value,`Sentient Marketplace`,`https://hederasentient.com/nft-marketplace/${nftTokenId}`,NftFile)
         
         await sleep(10*1000)
-         
+
         }
 
-         
-    }
+        timeStampSentient=txTimestamp
     
     }
+
+    }
+    timeStampSentient++
     
     break
     
@@ -481,12 +393,6 @@ async function main(){
     }
     
     }
-    
-    
-    if (transactions.length!=0){
-        timeStampSentient = parseInt(transactions[0]['consensus_timestamp'])+1
-    }
-
 
     // FOR HASHGUILD MARKETPLACE
 
