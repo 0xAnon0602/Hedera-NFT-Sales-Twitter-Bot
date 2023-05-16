@@ -9,7 +9,7 @@ require('dotenv').config()
 const CoinGecko = require('coingecko-api');
 const CoinGeckoClient = new CoinGecko();
 
-var mainZuseAccount = `0.0.703235`
+var mainZuseAccount = `0.0.2254995`
 var mainSentientAccount = `0.0.1223480`
 
 
