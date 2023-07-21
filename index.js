@@ -1,34 +1,42 @@
-const twit = require('twit');
+const { TwitterApi } = require("twitter-api-v2");
 const fs = require('fs')
 require('dotenv').config()
 
 const fetch = require('node-fetch')
 
-require('dotenv').config()
-
-const CoinGecko = require('coingecko-api');
-const CoinGeckoClient = new CoinGecko();
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 var mainZuseAccount = `0.0.2254995`
-var mainSentientAccount = `0.0.1223480`
-
 
 let rawdata = fs.readFileSync('tokenID.json');
 var tokenID = JSON.parse(rawdata);
 
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-const downloadFile = (async (url, path) => {
+const downloadFile = (async (url,marketplace) => {
+    try{
+        if(marketplace=='SentX'){
+            const extension = url.slice(-3)
+            if(extension=="jpg"){
+            url = url.replace("w32","w500")
+        }
+    }
     const res = await fetch(url);
-    const fileStream = fs.createWriteStream(path);
+    const fileStream = fs.createWriteStream('NftFile.jpg');
     await new Promise((resolve, reject) => {
         res.body.pipe(fileStream);
         res.body.on("error", reject);
         fileStream.on("finish", resolve);
       });
+    }catch(e){
+        console.log('Something Went Wrong!')
+        fs.writeFile('NftFile.jpg', "", function(err) {
+            if(err) {
+                return console.log(err);
+            }
+        }); 
+    }
   });
 
 
@@ -46,62 +54,63 @@ function toTimestamp(strDate){
     return datum/1000;
 }
 
-const twitterConfig = {
-    consumer_key:         process.env.API_Key,
-    consumer_secret:     process.env.API_Secret,
-    access_token:         process.env.Access_Token,
-    access_token_secret: process.env.Access_Token_Secret,
+const client = new TwitterApi({
+    appKey: process.env.API_Key,
+    appSecret: process.env.API_Secret,
+    accessToken: process.env.Access_Token,
+    accessSecret: process.env.Access_Token_Secret,
+    bearerToken:process.env.Nh
+});
 
-};
+const rwClient = client.readWrite;
 
-const T = new twit(twitterConfig);
 
 async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile) {
 
-    if(imagFile!=undefined){
+    if(imagFile!=undefined && imagFile!="undefined"){
 
+    const mediaId = await client.v1.uploadMedia(imagFile);
+        
+        if(mediaId.length!=0){
 
-    var b64content = fs.readFileSync(imagFile, { encoding: 'base64' })
+        try {
 
-
-    T.post('media/upload', { media_data: b64content }, function (err, data, response) {
-
-        if(data.length!=0){
-
-        var mediaIdStr = data.media_id_string
-        var meta_params = { media_id: mediaIdStr}
-       
-        T.post('media/metadata/create', meta_params, function (err, data, response) {
-          if (!err) {
-
-            var params = { status: `${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`,
-                            media_ids: [mediaIdStr] }
-       
-            T.post('statuses/update', params, function (err, data, response) {
-              console.log(`Tweeted Successfully`)
-
-            })
-          }else{
-            console.log(err)
-          }
-
-        })
+            await rwClient.v2.tweet({
+                text: `${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`,
+                media: { media_ids: [mediaId] },
+            });
+            console.log(`Tweeted Successfully`)  
+            
+        } catch (error) {
+            console.error(error);
+            console.log(`Cotinuing without attachment`)
+            try {
+                await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
+                console.log(`Tweeted Successfully`)  
+              } catch (error) {
+                console.error(error);
+              }
+        }
 
     }else{
         console.log(`Cotinuing without attachment`)
-        T.post('statuses/update', { status:  `${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}\n#HBAR #HBARNFT #HBARbarians #Hedera` }, function(err, data, response) {
+        try {
+            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
             console.log(`Tweeted Successfully`)  
-        })
+          } catch (error) {
+            console.error(error);
+          }
     }
-
-      })
 
 
 
     }else{
-        T.post('statuses/update', { status:  `${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}\n#HBAR #HBARNFT #HBARbarians #Hedera` }, function(err, data, response) {
+        try {
+            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
             console.log(`Tweeted Successfully`)  
-        })
+          } catch (error) {
+            console.error(error);
+        }
     }
 
       await sleep(1*1000)
@@ -150,7 +159,7 @@ async function main(){
         while(true){
             try{
 
-        // To get each transactions info
+        // To get each transactions i nfo
 
         var url=`https://mainnet-public.mirrornode.hedera.com/api/v1/transactions/${txID}?nonce=0`
 
@@ -235,7 +244,7 @@ async function main(){
             try{
                 
 
-                await downloadFile(nftImage,'NftFile.jpg')
+                await downloadFile(nftImage,'Zuse')
 
                 var imageSize = parseInt(((await fs.statSync('NftFile.jpg')).size)/1024)
 
@@ -330,7 +339,7 @@ async function main(){
             var buyer = tx['buyerAddress']
             var seller = tx['sellerAddress']
             var nftName = tx['name']
-            var nftImage=tx['imageParsed']
+            var nftImage=tx['imageCDN']
             var value = Math.abs(parseInt(tx['salePrice']))
             var txID = tx['saleTransactionId']
     
@@ -338,7 +347,7 @@ async function main(){
                 try{
                     
     
-                    await downloadFile(nftImage,'NftFile.jpg')
+                    await downloadFile(nftImage,'SentX')
     
                     var imageSize = parseInt(((await fs.statSync('NftFile.jpg')).size)/1024)
     
@@ -537,7 +546,7 @@ async function main(){
                             try{
                                 
 
-                                await downloadFile(nftImage,'NftFile.jpg')
+                                await downloadFile(nftImage,'Hashguild')
 
                                 var imageSize = parseInt(((await fs.statSync('NftFile.jpg')).size)/1024)
 
