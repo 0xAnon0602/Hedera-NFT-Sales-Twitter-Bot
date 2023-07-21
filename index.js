@@ -382,8 +382,7 @@ async function main(){
         `)
         
 
-        await tweet(nftName,nftSerial,value,`Sentient Marketplace`,`https://hederasentient.com/nft-marketplace/${nftTokenId}`,NftFile)
-        
+        await tweet(nftName,nftSerial,value,`SentX Marketplace`,`https://sentx.io/nft-marketplace/${nftTokenId}`,NftFile)        
         await sleep(10*1000)
 
         }
