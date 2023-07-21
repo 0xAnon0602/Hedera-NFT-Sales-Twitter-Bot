@@ -193,6 +193,7 @@ async function main(){
             }
         }
 
+        if(value>=500){
    
         while(true){
             try{
@@ -281,6 +282,8 @@ async function main(){
         await tweet(nftName,nftSerial,value,`Zuse Marketplace`,`https://zuse.market/collection/${nftTokenId}`,NftFile)
         
         await sleep(10*1000)
+
+        }
          
         }
     }
@@ -342,6 +345,8 @@ async function main(){
             var nftImage=tx['imageCDN']
             var value = Math.abs(parseInt(tx['salePrice']))
             var txID = tx['saleTransactionId']
+
+        if(value>=500){
     
             while(true){
                 try{
@@ -384,6 +389,8 @@ async function main(){
 
         await tweet(nftName,nftSerial,value,`SentX Marketplace`,`https://sentx.io/nft-marketplace/${nftTokenId}`,NftFile)        
         await sleep(10*1000)
+
+        }
 
         }
 
@@ -502,7 +509,8 @@ async function main(){
                         var value = tx['hbarTransacted']['price']
                         var nftImage = tx['transactedNft']['imageUrl']
                         var nftSerial = tx['transactedNft']['serialNo']
-        
+                    
+                if(value>=500){
                
                         while(true){
                             try{
@@ -588,6 +596,8 @@ async function main(){
                     await sleep(10*1000)
         
                     }
+
+                }
 
             }
         }
