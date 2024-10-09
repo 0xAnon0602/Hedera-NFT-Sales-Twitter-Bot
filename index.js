@@ -30,6 +30,48 @@ const downloadFile = (async (url) => {
     }
   });
 
+async function getSentxToken(_paymentTokenType){
+
+    try {
+        
+        if(_paymentTokenType == 1) return `ℏ`
+
+        else{
+
+            var url=`https://gbackend.sentx.io/fungibleTokens/getFungibleTokenSettings`
+
+            var opts = {
+                method: "GET",
+                headers: {
+                    'accept': 'application/json, text/plain, */*',
+                    'accept-language': 'en-GB,en;q=0.5',
+                    'content-type': 'application/json',
+                },
+                referrer: 'https://sentx.io/',
+            };
+
+            var response = await web_call(url,opts)
+
+            for(const tokenInfo of response.fungibleTokens){
+                if(tokenInfo.tokenId == _paymentTokenType){
+                    const paymentTokenName = tokenInfo.symbol
+                    if(paymentTokenName.includes("$")) return paymentTokenName
+                    else return `$${paymentTokenName}`
+                }
+            }
+
+            return null
+
+        }
+
+    }catch(e){
+        console.log(e)
+        console.log(`Error finding token name - ${_paymentTokenType}`)
+        return null
+    }
+
+}
+
 web_call = async (url,opts) => {
   
     let response_daily = await fetch(url,opts,{ mode: 'no-cors'});
@@ -50,7 +92,7 @@ const client = new TwitterApi({
 const rwClient = client.readWrite;
 
 
-async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile) {
+async function tweet(nftName,nftSerial,value,tokenName,marketplace,collectionURL,imagFile) {
 
     if(imagFile!=undefined && imagFile!="undefined"){
 
@@ -61,7 +103,7 @@ async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile)
         try {
 
             await rwClient.v2.tweet({
-                text: `${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`,
+                text: `${nftName} #${nftSerial} bought for ${value}${tokenName}  on ${marketplace}\n${collectionURL}`,
                 media: { media_ids: [mediaId] },
             });
             console.log(`Tweeted Successfully`)  
@@ -74,7 +116,7 @@ async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile)
 
             console.log(`Cotinuing without attachment`)
             try {
-                await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
+                await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}${tokenName} on ${marketplace}\n${collectionURL}`);
                 console.log(`Tweeted Successfully`)  
               } catch (error) {
                 console.error(error);
@@ -89,7 +131,7 @@ async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile)
     }catch(e){
         console.log(`Cotinuing without attachment`)
         try {
-            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
+            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}${tokenName}  on ${marketplace}\n${collectionURL}`);
             console.log(`Tweeted Successfully`)  
           } catch (error) {
             console.error(error);
@@ -99,7 +141,7 @@ async function tweet(nftName,nftSerial,value,marketplace,collectionURL,imagFile)
 
     }else{
         try {
-            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}ℏ  on ${marketplace}\n${collectionURL}`);
+            await rwClient.v2.tweet(`${nftName} #${nftSerial} bought for ${value}${tokenName}  on ${marketplace}\n${collectionURL}`);
             console.log(`Tweeted Successfully`)  
           } catch (error) {
             console.error(error);
@@ -165,32 +207,31 @@ var timeStampSentient = Math.floor(Date.now() / 1000)
             var nftImage=tx['imageCDN']
             var value = Math.abs(parseInt(tx['salePrice']))
             var txID = tx['saleTransactionId']
+            var tokenName = await getSentxToken(tx['paymentTokenId'])
 
         if(value>=100){
     
             await downloadFile(nftImage,'SentX')
             var NftFile = 'NftFile.jpg'
 
-        if(tokenID.includes(nftTokenId)){
-    
+            if(tokenID.includes(nftTokenId)){
+        
+                console.log(
+                ` 
+                Name -> ${nftName}
+                Buyer -> ${buyer}
+                Seller -> ${seller}
+                Nft Contract ->  ${nftTokenId}
+                Token ID ->  ${nftSerial}
+                Value -> ${value}
+                Image -> ${nftImage}
+                Tx ID -> ${txID}
+                `)
+                
+                await tweet(nftName,nftSerial,value,tokenName,`SentX Marketplace`,`https://sentx.io/nft-marketplace/${nftTokenId}`,NftFile)        
+                await sleep(10*1000)
 
-            console.log(
-            ` 
-            Name -> ${nftName}
-            Buyer -> ${buyer}
-            Seller -> ${seller}
-            Nft Contract ->  ${nftTokenId}
-            Token ID ->  ${nftSerial}
-            Value -> ${value}
-            Image -> ${nftImage}
-            Tx ID -> ${txID}
-            `)
-            
-
-            await tweet(nftName,nftSerial,value,`SentX Marketplace`,`https://sentx.io/nft-marketplace/${nftTokenId}`,NftFile)        
-            await sleep(10*1000)
-
-        }
+            }
 
         }
 
